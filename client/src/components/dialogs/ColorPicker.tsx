@@ -27,7 +27,7 @@ export default function ColorPicker({ color, onChange, label }: ColorPickerProps
 
   return (
     <div className="relative">
-      {label && <div className="block text-xs text-gray-500 mb-1">{label}</div>}
+      {label && <label htmlFor="color-input" className="block text-xs text-gray-500 mb-1">{label}</label>}
       <div className="flex items-center">
         <button
           className="w-8 h-8 rounded mr-2 border border-gray-700 flex-shrink-0"
@@ -36,6 +36,7 @@ export default function ColorPicker({ color, onChange, label }: ColorPickerProps
           aria-label="Select color"
         />
         <input
+          id="color-input"
           type="text"
           value={color}
           onChange={(e) => onChange(e.target.value)}

@@ -228,8 +228,18 @@ export default function Canvas() {
           onMouseDown={handleCanvasMouseDown}
           onMouseMove={handleCanvasMouseMove}
           onMouseUp={handleCanvasMouseUp}
-          onDragNode={() => {}} // This would be implemented for node drag events
-          onSelectNode={selectNode}
+          onDragNode={(id, pos) => {
+            console.log(`Dragging node with ID: ${id}, New Position:`, pos);
+            try {
+              updateNode(id, pos);
+            } catch (error) {
+              console.error(`Error updating node position for ID: ${id}`, error);
+            }
+          }}
+          onSelectNode={(id) => {
+            console.debug(`Node selected with ID: ${id}`);
+            selectNode(id);
+          }}
         />
       </div>
 

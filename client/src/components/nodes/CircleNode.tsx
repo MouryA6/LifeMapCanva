@@ -1,9 +1,9 @@
 import React from 'react';
 import { Group, Circle, Text } from 'react-konva';
-import { NodeData } from '@shared/schema';
+import { Node } from '@shared/schema'; // Ensure Node is correctly imported from '@shared/schema'
 
 interface CircleNodeProps {
-  node: NodeData;
+  node: Node; // Updated type
   isSelected: boolean;
   draggable: boolean;
   onClick: () => void;
@@ -31,14 +31,17 @@ const CircleNode: React.FC<CircleNodeProps> = ({
       onDragStart={onDragStart}
       onDragMove={onDragMove}
       onDragEnd={onDragEnd}
-      onClick={onClick}
+      onClick={() => {
+        console.debug(`CircleNode clicked with ID: ${node.id}`);
+        onClick();
+      }}
       onTap={onClick}
       id={node.id.toString()}
     >
       <Circle
         radius={radius}
         fill="#1A1A1A"
-        stroke={node.color}
+        stroke={node.borderColor}
         strokeWidth={2}
         shadowColor="black"
         shadowBlur={isSelected ? 10 : 0}
@@ -47,7 +50,7 @@ const CircleNode: React.FC<CircleNodeProps> = ({
         shadowOffsetY={0}
       />
       <Text
-        text={node.title}
+        text={node.text}
         fontSize={16}
         fontFamily="Poppins, sans-serif"
         fontStyle="600"

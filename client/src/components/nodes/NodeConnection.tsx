@@ -1,19 +1,23 @@
 import React from 'react';
-import { Group, Arrow } from 'react-konva';
-import { ConnectionData } from '@shared/schema';
+import { Group, Arrow, Text } from 'react-konva';
+import { Connection } from '@shared/schema';
 
 interface NodeConnectionProps {
-  connection: ConnectionData;
+  connection: Connection;
   points: number[];
   isSelected: boolean;
   onClick: () => void;
+  onEdit: (connectionId: string) => void; // New property for editing
+  onDelete: (connectionId: string) => void; // New property for deleting
 }
 
 const NodeConnection: React.FC<NodeConnectionProps> = ({
   connection,
   points,
   isSelected,
-  onClick
+  onClick,
+  onEdit,
+  onDelete
 }) => {
   return (
     <Group
@@ -34,6 +38,26 @@ const NodeConnection: React.FC<NodeConnectionProps> = ({
         shadowOffsetX={0}
         shadowOffsetY={0}
       />
+      {isSelected && (
+        <Group>
+          <Text
+            text="Edit"
+            fontSize={12}
+            fill="white"
+            onClick={() => onEdit(connection.id)}
+            x={points[2] - 20}
+            y={points[3] - 20}
+          />
+          <Text
+            text="Delete"
+            fontSize={12}
+            fill="red"
+            onClick={() => onDelete(connection.id)}
+            x={points[2] + 20}
+            y={points[3] - 20}
+          />
+        </Group>
+      )}
     </Group>
   );
 };

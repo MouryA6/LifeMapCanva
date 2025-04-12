@@ -60,9 +60,20 @@ export default function PropertiesPanel({
     }
   };
 
-  // Handle form input changes
+  // Update the handleInputChange function to dynamically apply changes
   const handleInputChange = (field: keyof typeof formState, value: any) => {
-    setFormState({ ...formState, [field]: value });
+    setFormState((prevState) => {
+      const updatedState = { ...prevState, [field]: value };
+
+      // Dynamically apply changes to the selected node
+      if (selectedNode) {
+        onUpdateNode(selectedNode.id, {
+          ...updatedState,
+        });
+      }
+
+      return updatedState;
+    });
   };
 
   // Apply changes to the selected node
@@ -153,8 +164,9 @@ export default function PropertiesPanel({
               <label className="block text-sm text-gray-400 mb-1">Position</label>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs text-gray-500">X</label>
+                  <label htmlFor="position-x" className="block text-xs text-gray-500">X</label>
                   <input 
+                    id="position-x"
                     type="number" 
                     value={formState.x}
                     onChange={(e) => handleInputChange('x', parseInt(e.target.value))}
@@ -162,8 +174,9 @@ export default function PropertiesPanel({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500">Y</label>
+                  <label htmlFor="position-y" className="block text-xs text-gray-500">Y</label>
                   <input 
+                    id="position-y"
                     type="number" 
                     value={formState.y}
                     onChange={(e) => handleInputChange('y', parseInt(e.target.value))}

@@ -1,9 +1,38 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { 
-  NodeData, ConnectionData, CanvasData, NodeType, ConnectionType
-} from '@shared/schema';
+  Connection, NodeType
+} from '@shared/schema'; // Added NodeData import
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+
+// Define missing types locally
+interface NodeData {
+  id: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  type: string;
+  [key: string]: any;
+}
+
+// Update ConnectionData to include required properties
+interface ConnectionData {
+  id: number;
+  sourceId: number;
+  targetId: number;
+  type: string;
+  color: string;
+  from?: string; // Optional for compatibility
+  to?: string;   // Optional for compatibility
+  [key: string]: any;
+}
+
+interface CanvasData {
+  id: number;
+  nodes: NodeData[];
+  connections: ConnectionData[];
+}
 
 interface CanvasContextProps {
   canvas: CanvasData | null;
@@ -15,30 +44,32 @@ interface CanvasContextProps {
   scale: number;
   position: { x: number, y: number };
   connectingNode: { id: number } | null;
-  
+
   loadCanvas: (id: number) => Promise<void>;
   createCanvas: (name: string) => Promise<number>;
   saveCanvas: () => Promise<boolean>;
   exportCanvas: () => Promise<boolean>;
-  
+
   setTool: (tool: 'select' | 'move' | 'connect') => void;
   setNodeType: (type: 'rectangle' | 'circle' | 'cloud') => void;
   setSelectedNodeId: (id: number | null) => void;
   setSelectedConnectionId: (id: number | null) => void;
   setScale: (scale: number) => void;
   setPosition: (position: { x: number, y: number }) => void;
-  
+
   addNode: (node: Omit<NodeData, 'id'>) => void;
   updateNode: (id: number, data: Partial<NodeData>) => void;
   deleteNode: (id: number) => void;
-  
+
   startConnecting: (nodeId: number) => void;
   finishConnecting: (targetId: number) => void;
   cancelConnecting: () => void;
-  
+
   addConnection: (connection: Omit<ConnectionData, 'id'>) => void;
   updateConnection: (id: number, data: Partial<ConnectionData>) => void;
   deleteConnection: (id: number) => void;
+
+  setCanvas: (canvas: CanvasData | null | ((prevCanvas: CanvasData | null) => CanvasData | null)) => void; // Updated setCanvas method
 }
 
 const CanvasContext = createContext<CanvasContextProps | undefined>(undefined);
@@ -155,9 +186,9 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (!canvas) return;
     
     const id = nextNodeId.current--;
-    const newNode: NodeData = { ...node, id };
+    const newNode: NodeData = { ...node, id, type: nodeType, x: 0, y: 0, width: 0, height: 0 };
     
-    setCanvas(prev => {
+    setCanvas((prev: CanvasData | null) => {
       if (!prev) return prev;
       return {
         ...prev,
@@ -167,11 +198,11 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [canvas]);
   
   const updateNode = useCallback((id: number, data: Partial<NodeData>) => {
-    setCanvas(prev => {
+    setCanvas((prev: CanvasData | null) => {
       if (!prev) return prev;
       return {
         ...prev,
-        nodes: prev.nodes.map(node => 
+        nodes: prev.nodes.map((node: NodeData) => 
           node.id === id ? { ...node, ...data } : node
         )
       };
@@ -179,17 +210,17 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, []);
   
   const deleteNode = useCallback((id: number) => {
-    setCanvas(prev => {
+    setCanvas((prev: CanvasData | null) => {
       if (!prev) return prev;
       
       // Also delete any connections that involve this node
       const updatedConnections = prev.connections.filter(
-        conn => conn.sourceId !== id && conn.targetId !== id
+        (conn: ConnectionData) => conn.sourceId !== id && conn.targetId !== id
       );
       
       return {
         ...prev,
-        nodes: prev.nodes.filter(node => node.id !== id),
+        nodes: prev.nodes.filter((node: NodeData) => node.id !== id),
         connections: updatedConnections
       };
     });
@@ -215,12 +246,12 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const newConnection: ConnectionData = {
       id,
       sourceId: connectingNode.id,
-      targetId,
-      type: ConnectionType.SUPPORTS,
-      color: '#4CAF50',
+      targetId: targetId,
+      type: 'default',
+      color: 'green', // Replace with a valid color string or define ConnectionColor
     };
     
-    setCanvas(prev => {
+    setCanvas((prev: CanvasData | null) => {
       if (!prev) return prev;
       return {
         ...prev,
@@ -237,11 +268,18 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   
   const addConnection = useCallback((connection: Omit<ConnectionData, 'id'>) => {
     if (!canvas) return;
-    
+
     const id = nextConnectionId.current--;
-    const newConnection: ConnectionData = { ...connection, id };
-    
-    setCanvas(prev => {
+    const newConnection: ConnectionData = { 
+      ...connection, 
+      id, 
+      sourceId: connection.sourceId || 0, // Default to 0 if not provided
+      targetId: connection.targetId || 0, // Default to 0 if not provided
+      type: 'default', 
+      color: 'green' 
+    };
+
+    setCanvas((prev: CanvasData | null) => {
       if (!prev) return prev;
       return {
         ...prev,
@@ -251,11 +289,11 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [canvas]);
   
   const updateConnection = useCallback((id: number, data: Partial<ConnectionData>) => {
-    setCanvas(prev => {
+    setCanvas((prev: CanvasData | null) => {
       if (!prev) return prev;
       return {
         ...prev,
-        connections: prev.connections.map(conn => 
+        connections: prev.connections.map((conn: ConnectionData) => 
           conn.id === id ? { ...conn, ...data } : conn
         )
       };
@@ -263,11 +301,11 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, []);
   
   const deleteConnection = useCallback((id: number) => {
-    setCanvas(prev => {
+    setCanvas((prev: CanvasData | null) => {
       if (!prev) return prev;
       return {
         ...prev,
-        connections: prev.connections.filter(conn => conn.id !== id)
+        connections: prev.connections.filter((conn: ConnectionData) => conn.id !== id)
       };
     });
     
@@ -312,6 +350,7 @@ export const CanvasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       addConnection,
       updateConnection,
       deleteConnection,
+      setCanvas,
     }}>
       {children}
     </CanvasContext.Provider>

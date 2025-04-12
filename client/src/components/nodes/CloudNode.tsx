@@ -1,9 +1,15 @@
 import React from 'react';
 import { Group, Path, Text } from 'react-konva';
-import { NodeData } from '@shared/schema';
+import { Node as BaseNode } from '@shared/schema';
+
+interface Node extends BaseNode {
+  title: string; // Add required title property
+  description?: string; // Add optional description property
+  color: string; // Add required color property
+}
 
 interface CloudNodeProps {
-  node: NodeData;
+  node: Node;
   isSelected: boolean;
   draggable: boolean;
   onClick: () => void;
@@ -47,7 +53,10 @@ const CloudNode: React.FC<CloudNodeProps> = ({
       onDragStart={onDragStart}
       onDragMove={onDragMove}
       onDragEnd={onDragEnd}
-      onClick={onClick}
+      onClick={() => {
+        console.debug(`CloudNode clicked with ID: ${node.id}`);
+        onClick();
+      }}
       onTap={onClick}
       id={node.id.toString()}
     >

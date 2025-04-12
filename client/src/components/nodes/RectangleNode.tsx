@@ -1,9 +1,9 @@
 import React from 'react';
 import { Group, Rect, Text } from 'react-konva';
-import { NodeData } from '@shared/schema';
+import { Node } from '@shared/schema';
 
 interface RectangleNodeProps {
-  node: NodeData;
+  node: Node;
   isSelected: boolean;
   draggable: boolean;
   onClick: () => void;
@@ -24,12 +24,12 @@ const RectangleNode: React.FC<RectangleNodeProps> = ({
   const lines = [];
   
   // Split text into lines if description exists
-  if (node.description) {
-    lines.push(node.title);
-    const descriptionLines = node.description.split("\n");
+  if (node.text) {
+    lines.push(node.text); // Assuming 'text' is used as the title
+    const descriptionLines = node.text.split("\n");
     lines.push(...descriptionLines);
   } else {
-    lines.push(node.title);
+    lines.push(node.text); // Use 'text' as a fallback if 'title' is not available
   }
   
   return (
@@ -40,7 +40,10 @@ const RectangleNode: React.FC<RectangleNodeProps> = ({
       onDragStart={onDragStart}
       onDragMove={onDragMove}
       onDragEnd={onDragEnd}
-      onClick={onClick}
+      onClick={() => {
+        console.debug(`RectangleNode clicked with ID: ${node.id}`);
+        onClick();
+      }}
       onTap={onClick}
       id={node.id.toString()}
     >
@@ -49,7 +52,7 @@ const RectangleNode: React.FC<RectangleNodeProps> = ({
         height={node.height}
         cornerRadius={4}
         fill="#1A1A1A"
-        stroke={node.color}
+        stroke={node.borderColor}
         strokeWidth={2}
         shadowColor="black"
         shadowBlur={isSelected ? 10 : 0}

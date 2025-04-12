@@ -1,6 +1,6 @@
 import { useCallback, useState, useRef, MutableRefObject } from 'react';
 import { useCanvas } from '@/components/ui/canvas-context';
-import { NodeData, ConnectionData } from '@shared/schema';
+import { Node, Connection } from '@shared/schema';
 
 interface UseCanvasReturn {
   stageRef: MutableRefObject<any>;
@@ -11,10 +11,10 @@ interface UseCanvasReturn {
   handleWheel: (e: any) => void;
   handleNodeDragStart: (e: any) => void;
   handleNodeDragMove: (e: any) => void;
-  handleNodeDragEnd: (e: any) => void;
+  handleNodeDragEnd: () => void;
   handleNodeClick: (nodeId: number) => void;
   handleConnectionClick: (connectionId: number) => void;
-  getConnectionPoints: (source: NodeData, target: NodeData) => number[];
+  getConnectionPoints: (source: Node, target: Node) => number[];
   isDragging: boolean;
   pointerPosition: { x: number; y: number } | null;
 }
@@ -180,68 +180,48 @@ export function useCanvasOperations(): UseCanvasReturn {
   }, [tool, setSelectedNodeId, setSelectedConnectionId]);
   
   // Helper function to get connection points between nodes
-  const getConnectionPoints = useCallback((source: NodeData, target: NodeData): number[] => {
-    // Calculate center points
+  const getConnectionPoints = useCallback((source: Node, target: Node): number[] => {
+    console.log('Calculating connection points for source:', source, 'and target:', target);
+
+    const calculateEdgePoint = (center: { x: number; y: number }, angle: number, dimensions: { width: number; height: number }, type: string) => {
+      if (type === 'circle') {
+        const radius = dimensions.width / 2;
+        return {
+          x: center.x + Math.cos(angle) * radius,
+          y: center.y + Math.sin(angle) * radius,
+        };
+      } else {
+        const halfWidth = dimensions.width / 2;
+        const halfHeight = dimensions.height / 2;
+        const absSlope = Math.abs(Math.tan(angle));
+
+        if (absSlope <= halfWidth / halfHeight) {
+          return {
+            x: center.x + Math.sign(Math.cos(angle)) * halfWidth,
+            y: center.y + Math.tan(angle) * Math.sign(Math.cos(angle)) * halfWidth,
+          };
+        } else {
+          return {
+            x: center.x + (1 / Math.tan(angle)) * Math.sign(Math.sin(angle)) * halfHeight,
+            y: center.y + Math.sign(Math.sin(angle)) * halfHeight,
+          };
+        }
+      }
+    };
+
     const sourceCenter = { x: source.x + source.width / 2, y: source.y + source.height / 2 };
     const targetCenter = { x: target.x + target.width / 2, y: target.y + target.height / 2 };
-    
-    // Calculate angle between centers
     const angle = Math.atan2(targetCenter.y - sourceCenter.y, targetCenter.x - sourceCenter.x);
-    
-    // Calculate source edge point
-    let sourceX, sourceY, targetX, targetY;
-    
-    // Handle different node shapes
-    if (source.type === 'circle') {
-      // For circles, use radius (width/2)
-      const radius = source.width / 2;
-      sourceX = sourceCenter.x + Math.cos(angle) * radius;
-      sourceY = sourceCenter.y + Math.sin(angle) * radius;
-    } else {
-      // For rectangles and other shapes, find intersection with edge
-      // This is a simplified approach that approximates the edge
-      const halfWidth = source.width / 2;
-      const halfHeight = source.height / 2;
-      
-      // Calculate slopes
-      const absSlope = Math.abs(Math.tan(angle));
-      
-      if (absSlope <= halfWidth / halfHeight) {
-        // Intersection with right/left edge
-        sourceX = sourceCenter.x + Math.sign(Math.cos(angle)) * halfWidth;
-        sourceY = sourceCenter.y + Math.tan(angle) * Math.sign(Math.cos(angle)) * halfWidth;
-      } else {
-        // Intersection with top/bottom edge
-        sourceX = sourceCenter.x + Math.cot(angle) * Math.sign(Math.sin(angle)) * halfHeight;
-        sourceY = sourceCenter.y + Math.sign(Math.sin(angle)) * halfHeight;
-      }
-    }
-    
-    // Calculate target edge point using the same approach
-    if (target.type === 'circle') {
-      const radius = target.width / 2;
-      targetX = targetCenter.x - Math.cos(angle) * radius;
-      targetY = targetCenter.y - Math.sin(angle) * radius;
-    } else {
-      const halfWidth = target.width / 2;
-      const halfHeight = target.height / 2;
-      
-      const absSlope = Math.abs(Math.tan(angle));
-      
-      if (absSlope <= halfWidth / halfHeight) {
-        targetX = targetCenter.x - Math.sign(Math.cos(angle)) * halfWidth;
-        targetY = targetCenter.y - Math.tan(angle) * Math.sign(Math.cos(angle)) * halfWidth;
-      } else {
-        targetX = targetCenter.x - Math.cot(angle) * Math.sign(Math.sin(angle)) * halfHeight;
-        targetY = targetCenter.y - Math.sign(Math.sin(angle)) * halfHeight;
-      }
-    }
-    
-    // Create a curved path between the two points
-    const midX = (sourceX + targetX) / 2;
-    const midY = (sourceY + targetY) / 2 + 20; // Add some curvature
-    
-    return [sourceX, sourceY, midX, midY, targetX, targetY];
+
+    const sourceEdge = calculateEdgePoint(sourceCenter, angle, { width: source.width, height: source.height }, source.type);
+    const targetEdge = calculateEdgePoint(targetCenter, angle + Math.PI, { width: target.width, height: target.height }, target.type);
+
+    const midX = (sourceEdge.x + targetEdge.x) / 2;
+    const midY = (sourceEdge.y + targetEdge.y) / 2 + 20;
+
+    console.log('Connection points calculated:', [sourceEdge.x, sourceEdge.y, midX, midY, targetEdge.x, targetEdge.y]);
+
+    return [sourceEdge.x, sourceEdge.y, midX, midY, targetEdge.x, targetEdge.y];
   }, []);
   
   return {
