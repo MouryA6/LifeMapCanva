@@ -268,8 +268,8 @@ const Canvas: React.FC<CanvasProps> = ({ width, height }) => {
   // Update renderConnections to include debug logs
   const renderConnections = () => {
     return canvas?.connections.map((connection) => {
-      const sourceNode = canvas.nodes.find((n): n is Node => n.id === connection.from) as Node | undefined;
-      const targetNode = canvas.nodes.find((n): n is Node => n.id === connection.to) as Node | undefined;
+      const sourceNode = canvas.nodes.find((n): n is Node => n.id === connection.sourceId) as Node | undefined;
+      const targetNode = canvas.nodes.find((n): n is Node => n.id === connection.targetId) as Node | undefined;
 
       if (!sourceNode || !targetNode) {
       console.warn('Connection rendering skipped due to missing nodes:', { connection, sourceNode, targetNode });
