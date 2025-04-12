@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .toolbox-item {
+    @apply text-gray-300 hover:bg-gray-700 hover:text-white cursor-pointer;
+  }
+  
+  .material-icons-outlined {
+    font-size: 20px;
+  }
+  
+  .canvas-grid {
+    @apply bg-gray-900;
+  }
+  
+  .bg-canvas-panel {
+    @apply bg-gray-800;
+  }
+  
+  .bg-accent-green {
+    @apply bg-emerald-500;
+  }
+}
